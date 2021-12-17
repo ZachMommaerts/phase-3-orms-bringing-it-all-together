@@ -1,7 +1,7 @@
 class Dog
     attr_accessor :id, :name, :breed
 
-    def initialize(name, breed)
+    def initialize(id: nil, name:, breed:)
         @name = name
         @breed = breed
     end
@@ -13,7 +13,43 @@ class Dog
                 name TEXT,
                 breed TEXT
             )
-            SQL
+        SQL
+        DB[:conn].execute(sql)
+    end
+
+    def self.drop_table
+        sql = <<-SQL
+            DROP TABLE IF EXISTS dogs
+        SQL
+        DB[:conn].execute(sql)
+    end
+
+    def save
+        sql = <<-SQL
+            INSERT INTO dogs (name, breed)
+            VALUES (?, ?)
+        SQL
+        DB[:conn].execute(sql, self.name, self.breed)
+
+        self.id = DB[:conn].execute("SELECT last_insert_rowid() FROM dogs")[0][0]
+
+        self
+    end
+
+    def self.create(name:, breed:)
+        dog = Dog.new(name: name, breed: breed)
+        dog.save
+    end
+
+    def self.new_from_db(row)
+        self.new(id: row[0], name: row[1], album: row[2])
+    end
+
+    def self.all
+        sql = <<-SQL
+            SELECT *
+            FROM dogs
+        SQL
         DB[:conn].execute(sql)
     end
 end
